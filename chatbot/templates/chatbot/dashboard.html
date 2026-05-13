@@ -1,0 +1,196 @@
+{% extends "chatbot/base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  .priority-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .priority-urgent-bg { background: rgba(244, 63, 94, 0.15); }
+  .priority-high-bg   { background: rgba(245, 158, 11, 0.15); }
+  .priority-medium-bg { background: rgba(59, 130, 246, 0.15); }
+  .priority-low-bg    { background: rgba(16, 185, 129, 0.15); }
+
+  .upcoming-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    transition: all .2s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .upcoming-card:hover {
+    border-color: var(--border-hover);
+    background: rgba(255, 255, 255, 0.05);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="topbar-title">👋 Welcome back, {{ user.username }}</div>
+    <div class="topbar-subtitle">{{ now|date:"l, d F Y" }} · {{ today_meetings|length }} meeting{{ today_meetings|length|pluralize }} today</div>
+  </div>
+  <div class="topbar-actions">
+    <a href="{% url 'create_meeting' %}" class="btn btn-primary"><i class="fas fa-plus"></i> New Meeting</a>
+    <a href="{% url 'chat' %}" class="btn btn-secondary"><i class="fas fa-robot"></i> AI Chat</a>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- STATS ROW -->
+  <div class="grid-4 mb-6">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(124,58,237,0.15);">📅</div>
+      <div>
+        <div class="stat-value">{{ total_meetings }}</div>
+        <div class="stat-label">Total Meetings</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(16,185,129,0.15);">✅</div>
+      <div>
+        <div class="stat-value" style="color:var(--accent-green)">{{ completed }}</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(245,158,11,0.15);">🔔</div>
+      <div>
+        <div class="stat-value" style="color:var(--accent-amber)">{{ pending_reminders|length }}</div>
+        <div class="stat-label">Pending Reminders</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(244,63,94,0.15);">❌</div>
+      <div>
+        <div class="stat-value" style="color:var(--accent-rose)">{{ cancelled }}</div>
+        <div class="stat-label">Cancelled</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2 mb-6">
+
+    <!-- UPCOMING MEETINGS -->
+    <div class="card">
+      <div class="flex items-center justify-between mb-4">
+        <div class="card-title"><i class="fas fa-calendar-alt" style="color:var(--accent-purple)"></i> Upcoming Meetings</div>
+        <a href="{% url 'meetings' %}" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+
+      {% if upcoming_meetings %}
+        {% for m in upcoming_meetings %}
+        <a href="{% url 'meeting_detail' m.pk %}" class="upcoming-card">
+          <div class="priority-icon {% if m.priority == 'urgent' %}priority-urgent-bg{% elif m.priority == 'high' %}priority-high-bg{% elif m.priority == 'medium' %}priority-medium-bg{% else %}priority-low-bg{% endif %}">
+            {% if m.priority == 'urgent' %}🚨{% elif m.priority == 'high' %}⚡{% elif m.priority == 'medium' %}📋{% else %}📝{% endif %}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.title }}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:3px;">⏰ {{ m.meeting_at|date:"d M, h:i A" }}</div>
+          </div>
+          <span class="badge {% if m.priority == 'urgent' %}badge-rose{% elif m.priority == 'high' %}badge-amber{% elif m.priority == 'medium' %}badge-blue{% else %}badge-green{% endif %}">
+            {{ m.priority|title }}
+          </span>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state" style="padding:30px 0;">
+          <i class="fas fa-calendar-times"></i>
+          <p>No upcoming meetings</p>
+          <a href="{% url 'create_meeting' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Schedule One</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- PENDING REMINDERS -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <div class="card-title"><i class="fas fa-bell" style="color:var(--accent-amber)"></i> Active Reminders</div>
+          <a href="{% url 'reminders' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+
+        {% if pending_reminders %}
+          {% for r in pending_reminders %}
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin-bottom:6px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);">
+            <span style="font-size:16px;">🔔</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.task }}</div>
+              <div style="font-size:11px;color:var(--text-muted);">{{ r.remind_at|date:"d M, h:i A" }}</div>
+            </div>
+            {% if r.is_ai_suggested %}<span class="badge badge-purple" style="font-size:10px;">AI</span>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">
+            <i class="fas fa-bell-slash" style="display:block;font-size:28px;margin-bottom:8px;opacity:.3;"></i>
+            No pending reminders
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- AI SUGGESTIONS -->
+      {% if suggestions %}
+      <div class="card" style="border-color:rgba(124,58,237,0.3);background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(59,130,246,0.05));">
+        <div class="card-title mb-4"><i class="fas fa-brain" style="color:var(--accent-purple)"></i> AI Insights</div>
+        {% for s in suggestions %}
+        <div style="padding:12px;border-radius:10px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;">{{ s.title }}</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">{{ s.body|truncatewords:20 }}</div>
+        </div>
+        {% endfor %}
+        <a href="{% url 'ai_analysis' %}" class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%;justify-content:center;">
+          <i class="fas fa-chart-line"></i> Full Analysis
+        </a>
+      </div>
+      {% else %}
+      <div class="card" style="border-color:rgba(124,58,237,0.2);">
+        <div class="card-title mb-4"><i class="fas fa-brain" style="color:var(--accent-purple)"></i> AI Insights</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Get personalized productivity insights based on your meeting patterns.</p>
+        <a href="{% url 'ai_analysis' %}" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">
+          <i class="fas fa-magic"></i> Analyze My Schedule
+        </a>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- TODAY'S MEETINGS -->
+  {% if today_meetings %}
+  <div class="card" style="border-color:rgba(6,182,212,0.3);background:linear-gradient(135deg,rgba(6,182,212,0.05),transparent);">
+    <div class="card-title mb-4" style="color:var(--accent-cyan)"><i class="fas fa-sun"></i> Today's Schedule</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      {% for m in today_meetings %}
+      <a href="{% url 'meeting_detail' m.pk %}" style="text-decoration:none;flex:1;min-width:200px;">
+        <div style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(6,182,212,0.2);">
+          <div style="font-size:13px;font-weight:700;margin-bottom:6px;">{{ m.title }}</div>
+          <div style="font-size:12px;color:var(--text-muted);">🕐 {{ m.meeting_at|date:"h:i A" }}</div>
+          {% if m.location %}<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">📍 {{ m.location }}</div>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
