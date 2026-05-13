@@ -1,0 +1,84 @@
+{% extends "chatbot/base.html" %}
+{% block title %}Edit Meeting{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="topbar-title">✏️ Edit Meeting</div>
+    <div class="topbar-subtitle">Update meeting details</div>
+  </div>
+  <div class="topbar-actions">
+    <a href="{% url 'meetings' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<div class="content" style="max-width:720px;">
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label">Meeting Title *</label>
+        <input type="text" name="title" class="form-control" value="{{ meeting.title }}" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date & Time *</label>
+          <input type="datetime-local" name="meeting_at" class="form-control"
+                 value="{{ meeting.meeting_at|date:'Y-m-d' }}T{{ meeting.meeting_at|date:'H:i' }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select name="priority" class="form-control">
+            <option value="low" {% if meeting.priority == 'low' %}selected{% endif %}>📝 Low</option>
+            <option value="medium" {% if meeting.priority == 'medium' %}selected{% endif %}>📋 Medium</option>
+            <option value="high" {% if meeting.priority == 'high' %}selected{% endif %}>⚡ High</option>
+            <option value="urgent" {% if meeting.priority == 'urgent' %}selected{% endif %}>🚨 Urgent</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-control">
+            <option value="upcoming" {% if meeting.status == 'upcoming' %}selected{% endif %}>🔵 Upcoming</option>
+            <option value="completed" {% if meeting.status == 'completed' %}selected{% endif %}>✅ Completed</option>
+            <option value="cancelled" {% if meeting.status == 'cancelled' %}selected{% endif %}>❌ Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <input type="text" name="location" class="form-control" value="{{ meeting.location }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Participants</label>
+        <input type="text" name="participants" class="form-control" value="{{ meeting.participants }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control">{{ meeting.description }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes / Agenda</label>
+        <textarea name="notes" class="form-control">{{ meeting.notes }}</textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;padding:12px;">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+        <a href="{% url 'meeting_detail' meeting.pk %}" class="btn btn-secondary" style="padding:12px 24px;">Cancel</a>
+        <a href="{% url 'delete_meeting' meeting.pk %}" class="btn btn-danger" style="padding:12px 16px;"
+           onclick="return confirm('Delete this meeting permanently?')">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
