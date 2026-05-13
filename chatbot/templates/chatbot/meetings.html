@@ -1,0 +1,125 @@
+{% extends "chatbot/base.html" %}
+{% block title %}Meetings{% endblock %}
+
+{% block extra_head %}
+<style>
+  .meeting-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all .2s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .meeting-item:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .priority-badge-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .priority-urgent-bg { background: rgba(244, 63, 94, 0.15); }
+  .priority-high-bg   { background: rgba(245, 158, 11, 0.15); }
+  .priority-medium-bg { background: rgba(59, 130, 246, 0.15); }
+  .priority-low-bg    { background: rgba(16, 185, 129, 0.15); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="topbar-title">📅 Meetings</div>
+    <div class="topbar-subtitle">Manage all your scheduled meetings</div>
+  </div>
+  <div class="topbar-actions">
+    <a href="{% url 'create_meeting' %}" class="btn btn-primary"><i class="fas fa-plus"></i> New Meeting</a>
+  </div>
+</div>
+
+<div class="content">
+  <!-- Filters -->
+  <form method="get" style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+    <select name="status" class="form-control" style="width:auto;min-width:140px;" onchange="this.form.submit()">
+      <option value="all" {% if filter_status == 'all' %}selected{% endif %}>All Status</option>
+      <option value="upcoming" {% if filter_status == 'upcoming' %}selected{% endif %}>Upcoming</option>
+      <option value="completed" {% if filter_status == 'completed' %}selected{% endif %}>Completed</option>
+      <option value="cancelled" {% if filter_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+    </select>
+    <select name="priority" class="form-control" style="width:auto;min-width:150px;" onchange="this.form.submit()">
+      <option value="all" {% if filter_priority == 'all' %}selected{% endif %}>All Priorities</option>
+      <option value="urgent" {% if filter_priority == 'urgent' %}selected{% endif %}>🚨 Urgent</option>
+      <option value="high" {% if filter_priority == 'high' %}selected{% endif %}>⚡ High</option>
+      <option value="medium" {% if filter_priority == 'medium' %}selected{% endif %}>📋 Medium</option>
+      <option value="low" {% if filter_priority == 'low' %}selected{% endif %}>📝 Low</option>
+    </select>
+    {% if filter_status != 'all' or filter_priority != 'all' %}
+    <a href="{% url 'meetings' %}" class="btn btn-secondary">✕ Clear Filters</a>
+    {% endif %}
+  </form>
+
+  {% if meetings %}
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    {% for m in meetings %}
+    <div class="meeting-item">
+      <!-- Priority Icon -->
+      <div class="priority-badge-box {% if m.priority == 'urgent' %}priority-urgent-bg{% elif m.priority == 'high' %}priority-high-bg{% elif m.priority == 'medium' %}priority-medium-bg{% else %}priority-low-bg{% endif %}">
+        {% if m.priority == 'urgent' %}🚨{% elif m.priority == 'high' %}⚡{% elif m.priority == 'medium' %}📋{% else %}📝{% endif %}
+      </div>
+
+      <!-- Info -->
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;flex-wrap:wrap;">
+          <span style="font-size:15px;font-weight:700;">{{ m.title }}</span>
+          <span class="badge {% if m.status == 'completed' %}badge-green{% elif m.status == 'cancelled' %}badge-rose{% else %}badge-blue{% endif %}">
+            {{ m.status|title }}
+          </span>
+          <span class="badge {% if m.priority == 'urgent' %}badge-rose{% elif m.priority == 'high' %}badge-amber{% elif m.priority == 'medium' %}badge-blue{% else %}badge-green{% endif %}">
+            {{ m.priority|title }}
+          </span>
+          {% if m.status == 'upcoming' and m.meeting_at < now %}
+          <span class="badge badge-rose">Overdue</span>
+          {% endif %}
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:var(--text-muted);">⏰ {{ m.meeting_at|date:"d M Y, h:i A" }}</span>
+          {% if m.location %}<span style="font-size:12px;color:var(--text-muted);">📍 {{ m.location }}</span>{% endif %}
+          {% if m.participants %}<span style="font-size:12px;color:var(--text-muted);">👥 {{ m.participants|truncatechars:30 }}</span>{% endif %}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <a href="{% url 'meeting_detail' m.pk %}" class="btn btn-secondary btn-sm" title="View"><i class="fas fa-eye"></i></a>
+        <a href="{% url 'edit_meeting' m.pk %}" class="btn btn-secondary btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
+        <a href="{% url 'delete_meeting' m.pk %}" class="btn btn-danger btn-sm" title="Delete"
+           onclick="return confirm('Delete this meeting?')"><i class="fas fa-trash"></i></a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="card">
+    <div class="empty-state">
+      <i class="fas fa-calendar-times"></i>
+      <p>No meetings found{% if filter_status != 'all' or filter_priority != 'all' %} with these filters{% endif %}.</p>
+      <a href="{% url 'create_meeting' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Schedule Meeting</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+
