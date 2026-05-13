@@ -1,0 +1,100 @@
+{% extends "chatbot/base.html" %}
+{% block title %}New Meeting{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="topbar-title">📅 Schedule New Meeting</div>
+    <div class="topbar-subtitle">Fill in the details to create a meeting with automatic reminder</div>
+  </div>
+  <div class="topbar-actions">
+    <a href="{% url 'meetings' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<div class="content" style="max-width:720px;">
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label">Meeting Title *</label>
+        <input type="text" name="title" class="form-control" placeholder="e.g. Weekly Team Standup" required autofocus>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date & Time *</label>
+          <input type="datetime-local" name="meeting_at" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select name="priority" class="form-control">
+            <option value="low">📝 Low</option>
+            <option value="medium" selected>📋 Medium</option>
+            <option value="high">⚡ High</option>
+            <option value="urgent">🚨 Urgent</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <input type="text" name="location" class="form-control" placeholder="Conference Room A / Zoom / Google Meet">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reminder Lead Time</label>
+          <select name="reminder_lead" class="form-control">
+            <option value="5">5 minutes before</option>
+            <option value="10">10 minutes before</option>
+            <option value="15" selected>15 minutes before</option>
+            <option value="30">30 minutes before</option>
+            <option value="60">1 hour before</option>
+            <option value="120">2 hours before</option>
+            <option value="1440">1 day before</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Participants</label>
+        <input type="text" name="participants" class="form-control" placeholder="Alice, Bob, charlie@example.com">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Separate names or emails with commas</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" placeholder="What is this meeting about?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes / Agenda</label>
+        <textarea name="notes" class="form-control" placeholder="Pre-meeting notes, agenda items..."></textarea>
+      </div>
+
+      <!-- AI Tip Banner -->
+      <div class="alert alert-info" style="margin-bottom:24px;">
+        <i class="fas fa-robot"></i>
+        <span>A reminder will be automatically created based on your lead time preference. You can also ask the <a href="{% url 'chat' %}" style="color:inherit;font-weight:700;">AI Assistant</a> to schedule meetings for you!</span>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;padding:12px;">
+          <i class="fas fa-calendar-check"></i> Schedule Meeting
+        </button>
+        <a href="{% url 'meetings' %}" class="btn btn-secondary" style="padding:12px 24px;">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Set minimum datetime to now
+const dtInput = document.querySelector('input[name="meeting_at"]');
+if (dtInput) {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  dtInput.min = now.toISOString().slice(0,16);
+}
+</script>
+{% endblock %}
