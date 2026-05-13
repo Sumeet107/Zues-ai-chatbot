@@ -1,0 +1,74 @@
+{% extends "chatbot/base.html" %}
+{% block title %}AI Memory{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="topbar-title">🧠 AI Memory</div>
+    <div class="topbar-subtitle">Persistent storage of preferences and patterns</div>
+  </div>
+</div>
+
+<div class="content">
+  <!-- Stats Grid -->
+  <div class="grid-4 mb-6">
+    {% for cat, count in stats.items %}
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(124,58,237,0.1);">
+        {% if cat == 'preference' %}⚙️{% elif cat == 'schedule' %}📅{% elif cat == 'work' %}💼{% elif cat == 'study' %}🎓{% else %}🧠{% endif %}
+      </div>
+      <div>
+        <div class="stat-value">{{ count }}</div>
+        <div class="stat-label">{{ cat|title }}s</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-title mb-4"><i class="fas fa-microchip" style="color:var(--accent-purple)"></i> Knowledge Base</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Key</th>
+            <th>Value</th>
+            <th>Updated</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for memory in memories %}
+          <tr>
+            <td>
+              <span class="badge {% if memory.category == 'preference' %}badge-purple{% elif memory.category == 'schedule' %}badge-blue{% elif memory.category == 'work' %}badge-amber{% elif memory.category == 'study' %}badge-green{% else %}badge-gray{% endif %}">
+                {{ memory.category|title }}
+              </span>
+            </td>
+            <td style="font-weight:600;color:var(--text-primary);">{{ memory.key }}</td>
+            <td style="color:var(--text-secondary);max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ memory.value }}">{{ memory.value }}</td>
+            <td style="font-size:12px;color:var(--text-muted);">{{ memory.updated_at|date:"d M, h:i A" }}</td>
+            <td style="text-align:right;">
+              <form action="{% url 'delete_memory' memory.pk %}" method="POST" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Forget this memory?')">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">
+              <i class="fas fa-brain-slash" style="font-size:32px;display:block;margin-bottom:10px;opacity:.3;"></i>
+              No memories stored yet. Chat with ZEUS to build context.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
