@@ -1,0 +1,223 @@
+{% extends "chatbot/base.html" %}
+{% load custom_filters %}
+{% block title %}AI Analysis{% endblock %}
+
+{% block extra_head %}
+<style>
+  .completion-bar {
+    height: 100%;
+    width: var(--bar-width, 0%);
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
+    border-radius: 5px;
+    transition: width 1s;
+  }
+  .suggestion-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: all .2s;
+  }
+  .suggestion-card:hover {
+    border-color: rgba(124, 58, 237, 0.35);
+  }
+  .suggestion-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent-purple), var(--accent-blue));
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="topbar-title">🧠 AI Analysis</div>
+    <div class="topbar-subtitle">Personalized insights based on your meeting patterns</div>
+  </div>
+  <div class="topbar-actions">
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-sync-alt"></i> Run AI Analysis
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="content">
+
+  {% if analysis_result %}
+  <div class="alert alert-success" style="margin-bottom:24px;">
+    <i class="fas fa-check-circle"></i>
+    Analysis complete! Results saved to your insights below.
+  </div>
+  {% endif %}
+
+  <!-- BEHAVIOR STATS -->
+  <div class="grid-4 mb-6">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(124,58,237,0.15);">📅</div>
+      <div>
+        <div class="stat-value">{{ behavior.total_meetings }}</div>
+        <div class="stat-label">Total Meetings</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(16,185,129,0.15);">✅</div>
+      <div>
+        <div class="stat-value" style="color:var(--accent-green)">{{ behavior.completed_meetings }}</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(6,182,212,0.15);">⏰</div>
+      <div>
+        <div class="stat-value" style="color:var(--accent-cyan)">{{ behavior.most_productive_hour }}:00</div>
+        <div class="stat-label">Peak Meeting Hour</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(245,158,11,0.15);">🔔</div>
+      <div>
+        <div class="stat-value" style="color:var(--accent-amber)">{{ behavior.preferred_reminder_lead_mins }}m</div>
+        <div class="stat-label">Avg Reminder Lead</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- AI SUMMARY -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      {% if behavior.ai_summary %}
+      <div class="card" style="border-color:rgba(124,58,237,0.3);background:linear-gradient(135deg,rgba(124,58,237,0.07),rgba(59,130,246,0.04));">
+        <div class="card-title mb-4" style="color:#c4b5fd;">
+          <i class="fas fa-brain"></i> Latest AI Summary
+          {% if behavior.last_analyzed %}
+          <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:auto;">
+            {{ behavior.last_analyzed|date:"d M, h:i A" }}
+          </span>
+          {% endif %}
+        </div>
+        <p style="font-size:14px;line-height:1.8;color:var(--text-secondary);white-space:pre-wrap;">{{ behavior.ai_summary }}</p>
+      </div>
+      {% else %}
+      <div class="card" style="border-color:rgba(124,58,237,0.25);text-align:center;padding:40px;">
+        <span style="font-size:48px;display:block;margin-bottom:16px;">🧠</span>
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:8px;">No Analysis Yet</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+          Run your first AI analysis to get personalized productivity insights based on your meeting patterns.
+        </p>
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+            <i class="fas fa-magic"></i> Analyze My Schedule Now
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- PRODUCTIVITY CHART -->
+      <div class="card">
+        <div class="card-title mb-4"><i class="fas fa-chart-bar" style="color:var(--accent-blue)"></i> Meeting Completion Rate</div>
+        {% if behavior.total_meetings > 0 %}
+        {% widthratio behavior.completed_meetings behavior.total_meetings 100 as completion_pct %}
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;">
+            <span style="color:var(--text-muted);">Completion Rate</span>
+            <span style="font-weight:700;color:var(--accent-green);">
+                {{ behavior.completed_meetings }} / {{ behavior.total_meetings }}
+            </span>
+          </div>
+          <div style="height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;">
+            <div class="completion-bar" style="--bar-width: {{ completion_pct }}%;"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div style="flex:1;padding:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;text-align:center;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-green);">{{ behavior.completed_meetings }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Completed</div>
+          </div>
+          <div style="flex:1;padding:12px;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;text-align:center;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-rose);">{{ behavior.cancelled_meetings }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Cancelled</div>
+          </div>
+          <div style="flex:1;padding:12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;text-align:center;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-blue);">{{ behavior.total_meetings }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Total</div>
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">
+          No meeting data yet. Start scheduling to see analytics!
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- SUGGESTIONS PANEL -->
+    <div>
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+        <i class="fas fa-lightbulb" style="color:var(--accent-amber)"></i> AI Suggestions
+      </div>
+
+      {% if suggestions %}
+        {% for s in suggestions %}
+        <div class="suggestion-card">
+          <div class="suggestion-accent"></div>
+          <div style="padding-left:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span class="badge {% if s.suggestion_type == 'habit' %}badge-purple{% elif s.suggestion_type == 'schedule' %}badge-blue{% elif s.suggestion_type == 'reminder' %}badge-amber{% else %}badge-cyan{% endif %}">
+                {% if s.suggestion_type == 'habit' %}🧠 Insight{% elif s.suggestion_type == 'schedule' %}📅 Schedule{% elif s.suggestion_type == 'reminder' %}🔔 Reminder{% else %}📋 Meeting{% endif %}
+              </span>
+              <a href="{% url 'dismiss_suggestion' s.pk %}" class="btn btn-secondary btn-sm" title="Dismiss">✕</a>
+            </div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:8px;">{{ s.title }}</div>
+            <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;">{{ s.body }}</p>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">{{ s.created_at|date:"d M Y, h:i A" }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="card" style="text-align:center;padding:40px;">
+          <i class="fas fa-lightbulb" style="font-size:40px;color:var(--accent-amber);opacity:.3;display:block;margin-bottom:14px;"></i>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+            No AI suggestions yet. Run analysis to generate personalized productivity insights.
+          </p>
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="fas fa-brain"></i> Generate Insights
+            </button>
+          </form>
+        </div>
+      {% endif %}
+
+      <!-- Tips -->
+      <div class="card" style="margin-top:20px;border-color:rgba(6,182,212,0.25);background:rgba(6,182,212,0.04);">
+        <div class="card-title mb-3" style="color:var(--accent-cyan);"><i class="fas fa-info-circle"></i> How AI Analysis Works</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          {% with tips="Tracks your meeting hours to find peak productivity times|Monitors completion rates to identify scheduling patterns|Suggests optimal reminder lead times based on your habits|Generates personalized productivity recommendations" %}
+          {% for tip in tips|split:"|" %}
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text-secondary);">
+            <span style="color:var(--accent-cyan);font-size:10px;margin-top:4px;">●</span>
+            <span>{{ tip }}</span>
+          </div>
+          {% endfor %}
+          {% endwith %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
